@@ -75,6 +75,10 @@ class Palette(BaseModel):
                 'mask': self.mask.detach()[:].float().cpu(),
                 'mask_image': (self.mask_image+1)/2,
             })
+        if self.task == 'deblur':
+            dict.update({
+                'blur': (self.cond_image.detach()[:].float().cpu()+1)/2,
+            })
         if phase != 'train':
             dict.update({
                 'output': (self.output.detach()[:].float().cpu()+1)/2
@@ -94,7 +98,7 @@ class Palette(BaseModel):
             ret_path.append('Out_{}'.format(self.path[idx]))
             ret_result.append(self.visuals[idx-self.batch_size].detach().float().cpu())
         
-        if self.task in ['inpainting','uncropping']:
+        if self.task in ['inpainting','uncropping', 'deblur']:
             ret_path.extend(['Mask_{}'.format(name) for name in self.path])
             ret_result.extend(self.mask_image)
 
