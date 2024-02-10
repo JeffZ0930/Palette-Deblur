@@ -55,6 +55,7 @@ def main_worker(gpu, ngpus_per_node, opt):
     phase_logger.info('Begin model {}.'.format(opt['phase']))
     # try:
     if opt['phase'] == 'train':
+        torch.cuda.empty_cache()
         model.train()
     else:
         model.test()

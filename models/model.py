@@ -60,6 +60,7 @@ class Palette(BaseModel):
         ''' must use set_device in tensor '''
         self.cond_image = self.set_device(data.get('cond_image'))
         self.gt_image = self.set_device(data.get('gt_image'))
+        self.blurred_image = self.set_device(data.get('blurred_image'))
         self.mask = self.set_device(data.get('mask'))
         self.mask_image = data.get('mask_image')
         self.path = data['path']
@@ -75,10 +76,6 @@ class Palette(BaseModel):
                 'mask': self.mask.detach()[:].float().cpu(),
                 'mask_image': (self.mask_image+1)/2,
             })
-        if self.task == 'deblur':
-            dict.update({
-                'blur': (self.cond_image.detach()[:].float().cpu()+1)/2,
-            })
         if phase != 'train':
             dict.update({
                 'output': (self.output.detach()[:].float().cpu()+1)/2
@@ -92,13 +89,16 @@ class Palette(BaseModel):
             ret_path.append('GT_{}'.format(self.path[idx]))
             ret_result.append(self.gt_image[idx].detach().float().cpu())
 
+            ret_path.append('Blur_{}'.format(self.path[idx]))
+            ret_result.append(self.blurred_image[idx].detach().float().cpu())
+
             ret_path.append('Process_{}'.format(self.path[idx]))
             ret_result.append(self.visuals[idx::self.batch_size].detach().float().cpu())
             
             ret_path.append('Out_{}'.format(self.path[idx]))
             ret_result.append(self.visuals[idx-self.batch_size].detach().float().cpu())
         
-        if self.task in ['inpainting','uncropping', 'deblur']:
+        if self.task in ['inpainting','uncropping']:
             ret_path.extend(['Mask_{}'.format(name) for name in self.path])
             ret_result.extend(self.mask_image)
 

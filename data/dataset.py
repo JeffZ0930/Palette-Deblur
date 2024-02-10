@@ -4,6 +4,8 @@ from PIL import Image
 import os
 import torch
 import numpy as np
+import cv2
+import torchvision.transforms.functional as TF
 
 from .util.mask import (bbox2mask, brush_stroke_mask, get_irregular_mask, random_bbox, random_cropping_bbox)
 
@@ -172,5 +174,46 @@ class ColorizationDataset(data.Dataset):
 
     def __len__(self):
         return len(self.flist)
+
+class DeblurDataset(data.Dataset):
+    def __init__(self, data_root, kernel_size, data_len=-1, image_size=[256, 256], loader=pil_loader):
+        imgs = make_dataset(data_root)
+        if data_len > 0:
+            self.imgs = imgs[:int(data_len)]
+        else:
+            self.imgs = imgs
+        self.tfs = transforms.Compose([
+                transforms.Resize((image_size[0], image_size[1])),
+                transforms.ToTensor(),
+                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5, 0.5])
+        ])
+        self.loader = loader
+        self.image_size = image_size
+        self.kernel_size = kernel_size
+
+    def __getitem__(self, index):
+        ret = {}
+        path = self.imgs[index]
+        img = self.tfs(self.loader(path))
+        #Convert img to numpy array
+        blurred_img = np.array(self.loader(path))
+        #Apply OpenCV blur method
+        blurred_img = cv2.GaussianBlur(blurred_img, (self.kernel_size, self.kernel_size), 0)
+        #Convert back to tensor
+        blurred_img = torch.tensor(blurred_img).permute(2, 0, 1)
+        #Convert back to PIL image
+        blurred_img = TF.to_pil_image(blurred_img)
+
+        cond_image = self.tfs(blurred_img) 
+        blurred_img = self.tfs(blurred_img) 
+        
+        ret['gt_image'] = img
+        ret['cond_image'] = cond_image
+        ret['blurred_image'] = blurred_img
+        ret['path'] = path.rsplit("/")[-1].rsplit("\\")[-1]
+        return ret
+
+    def __len__(self):
+        return len(self.imgs)
 
 

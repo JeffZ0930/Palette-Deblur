@@ -110,8 +110,7 @@ class BaseModel():
             return 
         self.logger.info('Beign loading pretrained model [{:s}] ...'.format(network_label))
 
-        # model_path = "{}_{}.pth".format(self. opt['path']['resume_state'], network_label)
-        model_path = "pre-trained_model/inpainting_celebahq/200_Network.pth"
+        model_path = "{}_{}.pth".format(self. opt['path']['resume_state'], network_label)
         
         if not os.path.exists(model_path):
             self.logger.warning('Pretrained model in [{:s}] is not existed, Skip it'.format(model_path))
