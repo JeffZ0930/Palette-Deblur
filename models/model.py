@@ -89,8 +89,10 @@ class Palette(BaseModel):
             ret_path.append('GT_{}'.format(self.path[idx]))
             ret_result.append(self.gt_image[idx].detach().float().cpu())
 
-            ret_path.append('Blur_{}'.format(self.path[idx]))
-            ret_result.append(self.blurred_image[idx].detach().float().cpu())
+            #TODO: Should put this chunk of code below, out of the for loop
+            if self.task == 'deblur':
+                ret_path.append('Blur_{}'.format(self.path[idx]))
+                ret_result.append(self.blurred_image[idx].detach().float().cpu())
 
             ret_path.append('Process_{}'.format(self.path[idx]))
             ret_result.append(self.visuals[idx::self.batch_size].detach().float().cpu())

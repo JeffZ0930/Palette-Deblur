@@ -1,6 +1,6 @@
 {
     "name": "deblur_celebahq",
-    "gpu_ids": [0], 
+    "gpu_ids": [3,4], //Default 0
     "seed" : -1,  
     "finetune_norm": false, 
 
@@ -10,7 +10,7 @@
         "tb_logger": "tb_logger", 
         "results": "results",
         "checkpoint": "checkpoint",
-        "resume_state": "experiments/train_kernelSize37_retrained_completely/checkpoint/70"
+        "resume_state": "" //the saved model to start with
     },
 
     "datasets": {
@@ -18,15 +18,16 @@
             "which_dataset": {  
                 "name": ["data.dataset", "DeblurDataset"], 
                 "args":{         
-                    "data_root": "datasets/celeba_hq_256_train",
+                    "data_root": "datasets/celeba_hq_256_train", //training dataset
                     "data_len": -1,
-                    "kernel_size": 37
+                    "kernel_size": [81], //Kernel size of Gaussian blur
+                    "sigma": -1 //Sigma of Gaussian blur (set to -1 let sigma to be calculated automatically based on kernel size)
                 } 
             },
             "dataloader":{
-                "validation_split": 5, 
+                "validation_split": 10, //Default 2
                 "args":{ 
-                    "batch_size": 3, 
+                    "batch_size": 5, //Default 3
                     "num_workers": 4,
                     "shuffle": true,
                     "pin_memory": true,
@@ -45,13 +46,14 @@
             "which_dataset": {
                 "name": "DeblurDataset", 
                 "args":{
-                    "data_root": "datasets/my_test",
-                    "kernel_size": 37
+                    "data_root": "datasets/celeba_hq_256_test", //testing dataset
+                    "kernel_size": [37], //Kernel size of Gaussian blur
+                    "sigma": -1 //Sigma of Gaussian blur (set to -1 let sigma to be calculated automatically based on kernel size)
                 }
             },
             "dataloader":{
                 "args":{
-                    "batch_size": 8,
+                    "batch_size": 8, //Default 8
                     "num_workers": 4,
                     "pin_memory": true
                 }
@@ -120,14 +122,14 @@
             "mse_loss" 
         ],
         "which_metrics": [ 
-            "mae" 
+            "mae"
         ]
     },
 
     "train": { 
         "n_epoch": 1e8, 
         "n_iter": 1e8, 
-        "val_epoch": 5, 
+        "val_epoch": 10, //Default 5 
         "save_checkpoint_epoch": 10,
         "log_iter": 1e3, 
         "tensorboard" : true 

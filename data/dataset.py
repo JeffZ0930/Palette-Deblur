@@ -6,6 +6,7 @@ import torch
 import numpy as np
 import cv2
 import torchvision.transforms.functional as TF
+import random
 
 from .util.mask import (bbox2mask, brush_stroke_mask, get_irregular_mask, random_bbox, random_cropping_bbox)
 
@@ -44,7 +45,7 @@ class InpaintDataset(data.Dataset):
         self.tfs = transforms.Compose([
                 transforms.Resize((image_size[0], image_size[1])),
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5, 0.5])
+                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
         ])
         self.loader = loader
         self.mask_config = mask_config
@@ -85,6 +86,10 @@ class InpaintDataset(data.Dataset):
             mask = regular_mask | irregular_mask
         elif self.mask_mode == 'file':
             pass
+        elif self.mask_mode == 'eye':
+            #TODO: This is hard code! Only works on celebahq-256 dataset
+            eye_location = (110, 70, 25, 110)
+            mask = bbox2mask(self.image_size, eye_location)
         else:
             raise NotImplementedError(
                 f'Mask mode {self.mask_mode} has not been implemented.')
@@ -176,7 +181,7 @@ class ColorizationDataset(data.Dataset):
         return len(self.flist)
 
 class DeblurDataset(data.Dataset):
-    def __init__(self, data_root, kernel_size, data_len=-1, image_size=[256, 256], loader=pil_loader):
+    def __init__(self, data_root, kernel_size, sigma, data_len=-1, image_size=[256, 256], loader=pil_loader):
         imgs = make_dataset(data_root)
         if data_len > 0:
             self.imgs = imgs[:int(data_len)]
@@ -190,19 +195,27 @@ class DeblurDataset(data.Dataset):
         self.loader = loader
         self.image_size = image_size
         self.kernel_size = kernel_size
+        self.sigma = sigma
 
     def __getitem__(self, index):
         ret = {}
         path = self.imgs[index]
         img = self.tfs(self.loader(path))
-        #Convert img to numpy array
-        blurred_img = np.array(self.loader(path))
-        #Apply OpenCV blur method
-        blurred_img = cv2.GaussianBlur(blurred_img, (self.kernel_size, self.kernel_size), 0)
-        #Convert back to tensor
-        blurred_img = torch.tensor(blurred_img).permute(2, 0, 1)
-        #Convert back to PIL image
-        blurred_img = TF.to_pil_image(blurred_img)
+
+        # #Convert img to numpy array
+        # blurred_img = np.array(self.loader(path))
+        # #Randomly choose a kernel size
+        k_size = random.choice(self.kernel_size)
+        # Apply OpenCV blur method
+        # blurred_img = cv2.GaussianBlur(blurred_img, (k_size, k_size), 0)
+        # #Convert back to tensor
+        # blurred_img = torch.tensor(blurred_img).permute(2, 0, 1)
+        # #Convert back to PIL image
+        # blurred_img = TF.to_pil_image(blurred_img)
+        sigma = None 
+        if self.sigma != -1:
+            sigma = self.sigma
+        blurred_img = TF.gaussian_blur(self.loader(path), kernel_size=k_size, sigma=sigma)
 
         cond_image = self.tfs(blurred_img) 
         blurred_img = self.tfs(blurred_img) 
