@@ -188,7 +188,6 @@ class DeblurDataset(data.Dataset):
         else:
             self.imgs = imgs
         self.tfs = transforms.Compose([
-                transforms.Resize((image_size[0], image_size[1])),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5,0.5, 0.5])
         ])
@@ -200,7 +199,9 @@ class DeblurDataset(data.Dataset):
     def __getitem__(self, index):
         ret = {}
         path = self.imgs[index]
-        img = self.tfs(self.loader(path))
+        #TODO: This is hard code! Image is forced to resize to 256*256
+        resized_img = transforms.Resize(256, 256)(self.loader(path))
+        img = self.tfs(resized_img)
 
         # #Convert img to numpy array
         # blurred_img = np.array(self.loader(path))
@@ -215,7 +216,7 @@ class DeblurDataset(data.Dataset):
         sigma = None 
         if self.sigma != -1:
             sigma = self.sigma
-        blurred_img = TF.gaussian_blur(self.loader(path), kernel_size=k_size, sigma=sigma)
+        blurred_img = TF.gaussian_blur(resized_img, kernel_size=k_size, sigma=sigma)
 
         cond_image = self.tfs(blurred_img) 
         blurred_img = self.tfs(blurred_img) 
